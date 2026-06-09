@@ -8,6 +8,7 @@ let studentClass = "";
 let player = null;
 let videoReady = false;
 let videoTimer = null;
+let lessonStarted = false;
 
 const YOUTUBE_VIDEO_ID = "LmtHI_ARagc";
 
@@ -145,11 +146,14 @@ function loadYouTubeAPI() {
         return;
     }
 
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
+    if (document.getElementById("youtube-api-script")) {
+        return;
+    }
 
-    const firstScriptTag = document.getElementsByTagName("script")[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    const tag = document.createElement("script");
+    tag.id = "youtube-api-script";
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
 }
 
 function createYouTubePlayer() {
@@ -168,6 +172,10 @@ function createYouTubePlayer() {
         events: {
             onReady: function () {
                 videoReady = true;
+
+                if (lessonStarted) {
+                    player.playVideo();
+                }
             },
             onStateChange: function (event) {
                 if (event.data === YT.PlayerState.PLAYING) {
@@ -187,6 +195,33 @@ function createYouTubePlayer() {
 document.addEventListener("DOMContentLoaded", function () {
     loadYouTubeAPI();
 });
+
+function startLesson() {
+    studentName = document.getElementById("studentName").value.trim();
+    studentClass = document.getElementById("studentClass").value.trim();
+
+    if (studentName === "" || studentClass === "") {
+        alert("Bạn hãy nhập đầy đủ họ tên và lớp trước khi bắt đầu.");
+        return;
+    }
+
+    lessonStarted = true;
+
+    localStorage.setItem("studentName", studentName);
+    localStorage.setItem("studentClass", studentClass);
+
+    document.getElementById("displayName").innerText = studentName;
+    document.getElementById("displayClass").innerText = studentClass;
+
+    document.getElementById("studentCard").classList.add("hidden");
+    document.getElementById("lessonSection").classList.remove("hidden");
+
+    loadYouTubeAPI();
+
+    if (player && videoReady && typeof player.playVideo === "function") {
+        player.playVideo();
+    }
+}
 
 function startVideoTimer() {
     if (videoTimer) return;
@@ -211,43 +246,14 @@ function stopVideoTimer() {
     }
 }
 
-function startLesson() {
-    studentName = document.getElementById("studentName").value.trim();
-    studentClass = document.getElementById("studentClass").value.trim();
-
-    if (studentName === "" || studentClass === "") {
-        alert("Bạn hãy nhập đầy đủ họ tên và lớp trước khi bắt đầu.");
-        return;
-    }
-
-    if (!videoReady || !player) {
-    document.getElementById("studentCard").classList.add("hidden");
-    document.getElementById("lessonSection").classList.remove("hidden");
-
-    const videoBox = document.getElementById("lessonVideo");
-    videoBox.innerHTML = "<p style='padding:40px;text-align:center;font-weight:700'>Đang tải video YouTube...</p>";
-
-    setTimeout(startLesson, 1000);
-    return;
-}
-    localStorage.setItem("studentName", studentName);
-    localStorage.setItem("studentClass", studentClass);
-
-    document.getElementById("displayName").innerText = studentName;
-    document.getElementById("displayClass").innerText = studentClass;
-
-    document.getElementById("studentCard").classList.add("hidden");
-    document.getElementById("lessonSection").classList.remove("hidden");
-
-    player.playVideo();
-}
-
 function showQuestionGroup(group) {
     currentGroup = group;
     currentQuestionIndex = 0;
     answeredGroups[group.id] = true;
 
-    player.pauseVideo();
+    if (player && player.pauseVideo) {
+        player.pauseVideo();
+    }
 
     document.getElementById("stepVideo").classList.remove("active");
     document.getElementById("stepInteract").classList.add("active");
@@ -347,7 +353,9 @@ function continueVideo() {
     currentGroup = null;
     currentQuestionIndex = 0;
 
-    player.playVideo();
+    if (player && player.playVideo) {
+        player.playVideo();
+    }
 }
 
 function closeQuestion() {
@@ -484,3 +492,61 @@ function escapeHTML(text) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxkaF2RKwFehrcVTToghKs1dNLTKT7d_K0mdA9YZ5LrZVsMXCaJ17nLYA3frvA5un-x/exec";
+
+function showFinalResult() {
+    const name = localStorage.getItem("studentName") || studentName || "";
+    const className = localStorage.getItem("studentClass") || studentClass || "";
+
+    const interactiveScore = Number(localStorage.getItem("interactiveScore") || score || 0);
+    const simulationScore = Number(localStorage.getItem("simulationScore") || 0);
+    const totalScore = interactiveScore + simulationScore;
+
+    document.getElementById("resultName").innerText = name;
+    document.getElementById("resultClass").innerText = className;
+    document.getElementById("resultInteractive").innerText = interactiveScore;
+    document.getElementById("resultSimulation").innerText = simulationScore;
+    document.getElementById("resultTotal").innerText = totalScore;
+
+    document.getElementById("resultModal").classList.remove("hidden");
+
+    sendResultToSheet(name, className, interactiveScore, simulationScore, totalScore);
+}
+
+async function sendResultToSheet(name, className, interactiveScore, simulationScore, totalScore) {
+    const status = document.getElementById("sendStatus");
+
+    try {
+        await fetch(SHEET_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: name,
+                className: className,
+                interactiveScore: interactiveScore,
+                simulationScore: simulationScore,
+                totalScore: totalScore,
+                time: new Date().toLocaleString("vi-VN")
+            })
+        });
+
+        status.innerText = "Đã gửi kết quả về hệ thống.";
+    } catch (error) {
+        status.innerText = "Chưa gửi được kết quả. Hãy kiểm tra kết nối.";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("result") === "1") {
+        document.getElementById("studentCard").classList.add("hidden");
+        document.getElementById("lessonSection").classList.remove("hidden");
+
+        showFinalResult();
+    }
+});
