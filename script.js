@@ -221,10 +221,15 @@ function startLesson() {
     }
 
     if (!videoReady || !player) {
-        alert("Video đang tải, hãy bấm lại sau vài giây.");
-        return;
-    }
+    document.getElementById("studentCard").classList.add("hidden");
+    document.getElementById("lessonSection").classList.remove("hidden");
 
+    const videoBox = document.getElementById("lessonVideo");
+    videoBox.innerHTML = "<p style='padding:40px;text-align:center;font-weight:700'>Đang tải video YouTube...</p>";
+
+    setTimeout(startLesson, 1000);
+    return;
+}
     localStorage.setItem("studentName", studentName);
     localStorage.setItem("studentClass", studentClass);
 
