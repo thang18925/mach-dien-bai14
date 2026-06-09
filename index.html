@@ -192,6 +192,27 @@
     </div>
 </div>
 
+<div class="result-modal hidden" id="resultModal">
+    <div class="result-card">
+        <h2>Kết quả học tập</h2>
+
+        <p><b>Họ tên:</b> <span id="resultName">---</span></p>
+        <p><b>Lớp:</b> <span id="resultClass">---</span></p>
+
+        <div class="result-score">
+            <p>Điểm tương tác: <b id="resultInteractive">0</b></p>
+            <p>Điểm mô phỏng: <b id="resultSimulation">0</b></p>
+            <p>Tổng điểm: <b id="resultTotal">0</b></p>
+        </div>
+
+        <p id="sendStatus">Đang gửi kết quả...</p>
+
+        <button class="primary-btn" onclick="window.location.href='index.html'">
+            Làm lại bài
+        </button>
+    </div>
+</div>
+
 <script src="script.js"></script>
 
 </body>
