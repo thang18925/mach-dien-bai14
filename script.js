@@ -5,12 +5,16 @@ let answeredGroups = {};
 let studentName = "";
 let studentClass = "";
 
-const video = document.getElementById("lessonVideo");
+let player;
+let videoReady = false;
+let videoTimer = null;
+
+const YOUTUBE_VIDEO_ID = "LmtHI_ARagc";
 
 const questionGroups = [
     {
         id: "group1",
-        time: 91, // 1:31 - sau Cảnh 10: Minh thắc mắc
+        time: 91,
         title: "Phần 1: Tình huống mở đầu",
         pointPerQuestion: 5,
         questions: [
@@ -73,7 +77,7 @@ const questionGroups = [
     },
     {
         id: "group2",
-        time: 121, // 2:01 - sau Cảnh 14: Dây dẫn
+        time: 121,
         title: "Phần 2: Cấu tạo mạch điện",
         pointPerQuestion: 5,
         questions: [
@@ -131,12 +135,69 @@ const questionGroups = [
     }
 ];
 
+function onYouTubeIframeAPIReady() {
+    player = new YT.Player("lessonVideo", {
+        videoId: YOUTUBE_VIDEO_ID,
+        width: "100%",
+        height: "600",
+        playerVars: {
+            rel: 0,
+            modestbranding: 1,
+            controls: 1
+        },
+        events: {
+            onReady: function () {
+                videoReady = true;
+            },
+            onStateChange: function (event) {
+                if (event.data === YT.PlayerState.PLAYING) {
+                    startVideoTimer();
+                } else {
+                    stopVideoTimer();
+                }
+
+                if (event.data === YT.PlayerState.ENDED) {
+                    document.getElementById("afterVideo").classList.remove("hidden");
+                }
+            }
+        }
+    });
+}
+
+function startVideoTimer() {
+    if (videoTimer) return;
+
+    videoTimer = setInterval(function () {
+        if (!player || !player.getCurrentTime) return;
+
+        const currentTime = Math.floor(player.getCurrentTime());
+
+        questionGroups.forEach(function (group) {
+            if (currentTime >= group.time && !answeredGroups[group.id]) {
+                showQuestionGroup(group);
+            }
+        });
+    }, 500);
+}
+
+function stopVideoTimer() {
+    if (videoTimer) {
+        clearInterval(videoTimer);
+        videoTimer = null;
+    }
+}
+
 function startLesson() {
     studentName = document.getElementById("studentName").value.trim();
     studentClass = document.getElementById("studentClass").value.trim();
 
     if (studentName === "" || studentClass === "") {
         alert("Bạn hãy nhập đầy đủ họ tên và lớp trước khi bắt đầu.");
+        return;
+    }
+
+    if (!videoReady || !player) {
+        alert("Video đang tải, hãy bấm lại sau vài giây.");
         return;
     }
 
@@ -149,29 +210,15 @@ function startLesson() {
     document.getElementById("studentCard").classList.add("hidden");
     document.getElementById("lessonSection").classList.remove("hidden");
 
-    video.play();
+    player.playVideo();
 }
-
-video.addEventListener("timeupdate", function () {
-    const currentTime = Math.floor(video.currentTime);
-
-    questionGroups.forEach(function (group) {
-        if (currentTime >= group.time && !answeredGroups[group.id]) {
-            showQuestionGroup(group);
-        }
-    });
-
-    if (video.duration && video.currentTime >= video.duration - 0.5) {
-        document.getElementById("afterVideo").classList.remove("hidden");
-    }
-});
 
 function showQuestionGroup(group) {
     currentGroup = group;
     currentQuestionIndex = 0;
     answeredGroups[group.id] = true;
 
-    video.pause();
+    player.pauseVideo();
 
     document.getElementById("stepVideo").classList.remove("active");
     document.getElementById("stepInteract").classList.add("active");
@@ -271,7 +318,7 @@ function continueVideo() {
     currentGroup = null;
     currentQuestionIndex = 0;
 
-    video.play();
+    player.playVideo();
 }
 
 function closeQuestion() {
@@ -279,7 +326,6 @@ function closeQuestion() {
 }
 
 function restartVideo() {
-    video.currentTime = 0;
     score = 0;
     currentGroup = null;
     currentQuestionIndex = 0;
@@ -296,7 +342,10 @@ function restartVideo() {
     document.getElementById("stepQuiz").classList.remove("active");
     document.getElementById("stepVideo").classList.add("active");
 
-    video.play();
+    if (player) {
+        player.seekTo(0, true);
+        player.playVideo();
+    }
 }
 
 function updateScore() {
@@ -313,67 +362,67 @@ function goSimulation() {
     window.location.href = "mophong.html";
 }
 
-function toggleAIChat(){
+function toggleAIChat() {
     const box = document.getElementById("aiChatBox");
     box.classList.toggle("hidden");
 
-    if(!box.classList.contains("hidden")){
-        setTimeout(()=>{
+    if (!box.classList.contains("hidden")) {
+        setTimeout(() => {
             document.getElementById("aiInput").focus();
-        },100);
+        }, 100);
     }
 }
 
-function handleAIEnter(event){
-    if(event.key === "Enter"){
+function handleAIEnter(event) {
+    if (event.key === "Enter") {
         sendAIMessage();
     }
 }
 
-function quickAsk(text){
+function quickAsk(text) {
     document.getElementById("aiInput").value = text;
     sendAIMessage();
 }
 
-async function sendAIMessage(){
+async function sendAIMessage() {
     const input = document.getElementById("aiInput");
     const message = input.value.trim();
 
-    if(message === "") return;
+    if (message === "") return;
 
-    appendChatMessage(message,"user");
+    appendChatMessage(message, "user");
     input.value = "";
 
-    const loadingId = appendChatMessage("Trợ lý AI đang suy nghĩ...","bot","loading");
+    const loadingId = appendChatMessage("Trợ lý AI đang suy nghĩ...", "bot", "loading");
 
-    try{
-        const response = await fetch("api/chat.php",{
-            method:"POST",
-            headers:{
-                "Content-Type":"application/json"
+    try {
+        const response = await fetch("api/chat.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
             },
-            body:JSON.stringify({
-                message:message
+            body: JSON.stringify({
+                message: message
             })
         });
 
         const data = await response.json();
         removeChatMessage(loadingId);
 
-        if(data.success){
-            appendChatMessage(data.reply,"bot");
-        }else{
-            appendChatMessage(data.reply || "Có lỗi khi gọi trợ lý AI.","bot");
+        if (data.success) {
+            appendChatMessage(data.reply, "bot");
+        } else {
+            appendChatMessage(data.reply || "Có lỗi khi gọi trợ lý AI.", "bot");
         }
-    }catch(error){
+    } catch (error) {
         removeChatMessage(loadingId);
-        appendChatMessage("Không kết nối được chatbot. Hãy chạy dự án bằng XAMPP tại localhost, không dùng Live Server.","bot");
+        appendChatMessage("Không kết nối được chatbot. Hãy chạy dự án bằng XAMPP tại localhost, không dùng Live Server.", "bot");
     }
 }
 
-function appendChatMessage(text,type,extraClass=""){
+function appendChatMessage(text, type, extraClass = "") {
     const messages = document.getElementById("aiChatMessages");
-    const id = "msg_" + Date.now() + "_" + Math.floor(Math.random()*9999);
+    const id = "msg_" + Date.now() + "_" + Math.floor(Math.random() * 9999);
 
     const row = document.createElement("div");
     row.className = "chat-row " + type + " " + extraClass;
@@ -381,7 +430,7 @@ function appendChatMessage(text,type,extraClass=""){
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.innerHTML = escapeHTML(text).replace(/\n/g,"<br>");
+    bubble.innerHTML = escapeHTML(text).replace(/\n/g, "<br>");
 
     row.appendChild(bubble);
     messages.appendChild(row);
@@ -390,16 +439,16 @@ function appendChatMessage(text,type,extraClass=""){
     return id;
 }
 
-function removeChatMessage(id){
+function removeChatMessage(id) {
     const el = document.getElementById(id);
-    if(el) el.remove();
+    if (el) el.remove();
 }
 
-function escapeHTML(text){
+function escapeHTML(text) {
     return text
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
