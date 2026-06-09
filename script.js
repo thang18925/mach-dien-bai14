@@ -5,7 +5,7 @@ let answeredGroups = {};
 let studentName = "";
 let studentClass = "";
 
-let player;
+let player = null;
 let videoReady = false;
 let videoTimer = null;
 
@@ -135,15 +135,35 @@ const questionGroups = [
     }
 ];
 
-function onYouTubeIframeAPIReady() {
+window.onYouTubeIframeAPIReady = function () {
+    createYouTubePlayer();
+};
+
+function loadYouTubeAPI() {
+    if (window.YT && window.YT.Player) {
+        createYouTubePlayer();
+        return;
+    }
+
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+
+    const firstScriptTag = document.getElementsByTagName("script")[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+function createYouTubePlayer() {
+    if (player) return;
+
     player = new YT.Player("lessonVideo", {
         videoId: YOUTUBE_VIDEO_ID,
         width: "100%",
-        height: "600",
+        height: "500",
         playerVars: {
             rel: 0,
             modestbranding: 1,
-            controls: 1
+            controls: 1,
+            playsinline: 1
         },
         events: {
             onReady: function () {
@@ -163,6 +183,10 @@ function onYouTubeIframeAPIReady() {
         }
     });
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    loadYouTubeAPI();
+});
 
 function startVideoTimer() {
     if (videoTimer) return;
@@ -339,7 +363,10 @@ function restartVideo() {
 
     document.getElementById("stepInteract").classList.remove("active");
     document.getElementById("stepSim").classList.remove("active");
-    document.getElementById("stepQuiz").classList.remove("active");
+
+    const stepQuiz = document.getElementById("stepQuiz");
+    if (stepQuiz) stepQuiz.classList.remove("active");
+
     document.getElementById("stepVideo").classList.add("active");
 
     if (player) {
@@ -367,7 +394,7 @@ function toggleAIChat() {
     box.classList.toggle("hidden");
 
     if (!box.classList.contains("hidden")) {
-        setTimeout(() => {
+        setTimeout(function () {
             document.getElementById("aiInput").focus();
         }, 100);
     }
