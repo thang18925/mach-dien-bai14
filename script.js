@@ -493,7 +493,7 @@ function escapeHTML(text) {
         .replace(/'/g, "&#039;");
 }
 
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbxkaF2RKwFehrcVTToghKs1dNLTKT7d_K0mdA9YZ5LrZVsMXCaJ17nLYA3frvA5un-x/exec";
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbz63SQzpsDp-Mne6FKWfHlthBRy3qcgsOdQje67ayFmom6IvDHsuc4NyIb1o0Qoq2vc/exec";
 
 function showFinalResult() {
     const name = localStorage.getItem("studentName") || studentName || "";
