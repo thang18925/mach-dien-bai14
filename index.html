@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bài 14 - Khái quát về mạch điện</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+    <div class="page-bg"></div>
+
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">⚡</div>
+            <div>
+                <h1>Bài 14. Khái quát về mạch điện</h1>
+                <p>Công nghệ 8 · Chương IV: Kĩ thuật điện</p>
+            </div>
+        </div>
+
+        <div class="score-pill">
+            <span>Điểm</span>
+            <strong id="scoreText">0</strong>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <section class="student-card" id="studentCard">
+            <div class="intro-left">
+                <span class="mini-label">Hệ thống học tập tương tác</span>
+                <h2>Mạch điện thông minh</h2>
+                <p>
+                    Học sinh xem video bài giảng, trả lời câu hỏi tương tác,
+                    thực hành mô phỏng lắp mạch điện và hoàn thành bài kiểm tra cuối bài.
+                </p>
+
+                <div class="feature-grid">
+                    <div class="feature-item">🎬 Video AI</div>
+                    <div class="feature-item">❓ Câu hỏi tương tác</div>
+                    <div class="feature-item">🔌 Mô phỏng HTML</div>
+                    <div class="feature-item">📊 Lưu kết quả</div>
+                </div>
+            </div>
+
+            <div class="login-box">
+                <h3>Thông tin học sinh</h3>
+
+                <label>Họ và tên</label>
+                <input type="text" id="studentName" placeholder="Ví dụ: Nguyễn Văn An" />
+
+                <label>Lớp</label>
+                <input type="text" id="studentClass" placeholder="Ví dụ: 8A1" />
+
+                <button class="primary-btn" onclick="startLesson()">
+                    Bắt đầu học
+                </button>
+
+                <p class="note">
+                    Kết quả học tập sẽ được ghi nhận sau khi hoàn thành toàn bộ hoạt động.
+                </p>
+            </div>
+        </section>
+
+        <section class="lesson-layout hidden" id="lessonSection">
+
+            <aside class="lesson-sidebar">
+                <h3>Tiến trình học</h3>
+
+                <div class="step active" id="stepVideo">
+                    <span>1</span>
+                    <p>Video bài giảng</p>
+                </div>
+
+                <div class="step" id="stepInteract">
+                    <span>2</span>
+                    <p>Câu hỏi tương tác</p>
+                </div>
+
+                <div class="step" id="stepSim">
+                    <span>3</span>
+                    <p>Mô phỏng mạch điện</p>
+                </div>
+
+                
+
+                <div class="student-info-box">
+                    <p>Học sinh</p>
+                    <strong id="displayName">---</strong>
+                    <small id="displayClass">---</small>
+                </div>
+            </aside>
+
+            <section class="video-card">
+                <div class="video-header">
+                    <div>
+                        <span class="mini-label">Video bài giảng</span>
+                        <h2>Khám phá mạch điện</h2>
+                    </div>
+
+                    <button class="outline-btn" onclick="restartVideo()">
+                        Xem lại từ đầu
+                    </button>
+                </div>
+
+                <div class="video-wrap">
+                    <video id="lessonVideo" controls>
+                        <source src="assets/video-bai14.mp4" type="video/mp4" />
+                        Trình duyệt của bạn không hỗ trợ video.
+                    </video>
+
+                    <div class="question-overlay hidden" id="questionOverlay">
+                        <div class="question-card">
+                            <div class="question-top">
+                                <span id="questionTag">Câu hỏi tương tác</span>
+                                <button class="close-question" onclick="closeQuestion()">×</button>
+                            </div>
+
+                            <h3 id="questionTitle">Câu hỏi</h3>
+                            <p id=" questionDesc">Chọn một đáp án đúng nhất.</p>
+
+                            <div class="answers" id="answerBox"></div>
+
+                            <div class="feedback hidden" id="feedbackBox">
+                                <div class="feedback-icon" id="feedbackIcon">✓</div>
+                                <div>
+                                    <h4 id="feedbackTitle">Chính xác!</h4>
+                                    <p id="feedbackText">Giải thích đáp án.</p>
+                                </div>
+                            </div>
+
+                            <button class="primary-btn hidden" id="continueBtn" onclick="continueVideo()">
+                                Tiếp tục xem video
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="after-video hidden" id="afterVideo">
+                    <h3>Em đã hoàn thành video bài giảng</h3>
+                    <p>
+                        Bây giờ hãy chuyển sang phần thực hành để tự lắp ráp một mạch điện đơn giản.
+                    </p>
+
+                    <div class="action-row">
+                        <button class="primary-btn" onclick="goSimulation()">
+                            Bắt đầu thực hành mô phỏng
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+    <!-- AI CHATBOT -->
+<button class="chat-fab" onclick="toggleAIChat()" id="chatFab">
+    <span>⚡</span>
+</button>
+
+<div class="chat-panel hidden" id="aiChatBox">
+    <div class="chat-header">
+        <div class="chat-bot-info">
+            <div class="chat-avatar">⚡</div>
+            <div>
+                <h3>Trợ lý AI Mạch điện</h3>
+                <p>Đang hỗ trợ bài Công nghệ 8</p>
+            </div>
+        </div>
+        <button class="chat-close" onclick="toggleAIChat()">×</button>
+    </div>
+
+    <div class="chat-suggest">
+        <button onclick="quickAsk('Mạch điện là gì?')">Mạch điện là gì?</button>
+        <button onclick="quickAsk('Mạch kín và mạch hở khác nhau thế nào?')">Mạch kín / hở</button>
+        <button onclick="quickAsk('Nguồn điện có chức năng gì?')">Nguồn điện</button>
+    </div>
+
+    <div class="chat-messages" id="aiChatMessages">
+        <div class="chat-row bot">
+            <div class="bubble">
+                Xin chào! Mình là trợ lý AI của bài học <b>Khái quát về mạch điện</b>. Em có thể hỏi về nguồn điện, dây dẫn, công tắc, phụ tải, mạch kín và mạch hở nhé.
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <input id="aiInput" type="text" placeholder="Nhập câu hỏi của em..." onkeydown="handleAIEnter(event)">
+        <button onclick="sendAIMessage()">➤</button>
+    </div>
+</div>
+</body>
+</html>

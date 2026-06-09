@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mô phỏng mạch điện - Bài 14</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+    font-family:Arial,sans-serif;
+    min-height:100vh;
+    padding:24px;
+    background:linear-gradient(135deg,#eef7ff,#ffffff);
+    color:#123;
+}
+.app{max-width:1200px;margin:auto}
+.header{
+    background:white;
+    border-radius:24px;
+    padding:22px 28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 18px 50px rgba(0,70,140,.12);
+    margin-bottom:24px;
+}
+.header h1{color:#0072bc;font-size:30px}
+.header p{margin-top:8px;color:#607080}
+.score{
+    background:#06345f;
+    color:white;
+    border-radius:20px;
+    padding:14px 24px;
+    text-align:center;
+}
+.score span{font-size:13px;color:#cdeaff}
+.score strong{display:block;color:#ffd84d;font-size:34px}
+
+.layout{
+    display:grid;
+    grid-template-columns:290px 1fr;
+    gap:24px;
+}
+.panel,.board-wrap{
+    background:white;
+    border-radius:26px;
+    padding:22px;
+    box-shadow:0 18px 50px rgba(0,70,140,.12);
+}
+.panel h2{color:#0072bc;margin-bottom:8px}
+.panel p{color:#607080;line-height:1.5;margin-bottom:16px;font-size:14px}
+.part{
+    border:2px solid #cfe7ff;
+    background:#f8fcff;
+    border-radius:18px;
+    padding:14px;
+    margin-bottom:14px;
+    text-align:center;
+    cursor:grab;
+    transition:.25s;
+}
+.part:hover{
+    transform:translateY(-3px);
+    border-color:#00a6ff;
+    box-shadow:0 12px 28px rgba(0,120,255,.14);
+}
+.part strong{display:block;color:#005999;margin-top:8px}
+.part small{display:block;color:#667;margin-top:4px}
+
+.board{
+    position:relative;
+    height:620px;
+    border:3px solid #1aa7df;
+    border-radius:24px;
+    background:
+        linear-gradient(rgba(0,150,220,.08) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,150,220,.08) 1px,transparent 1px),
+        #f7fdff;
+    background-size:32px 32px;
+    overflow:hidden;
+}
+.board-title{
+    position:absolute;
+    top:22px;
+    left:28px;
+    right:28px;
+}
+.board-title h2{color:#0072bc;font-size:26px}
+.board-title p{color:#607080;margin-top:6px}
+
+.svg-lines{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+.line{
+    stroke:#55c7e8;
+    stroke-width:4;
+    fill:none;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+.hot{
+    stroke:#ffc928;
+    filter:drop-shadow(0 0 8px #ffd84d);
+    animation:pulse 1s infinite;
+}
+@keyframes pulse{50%{stroke-width:7}}
+
+.drop{
+    position:absolute;
+    width:140px;
+    height:105px;
+    border:2px dashed #65c4e7;
+    border-radius:18px;
+    background:rgba(230,248,255,.85);
+    display:grid;
+    place-items:center;
+    text-align:center;
+    color:#0072bc;
+    font-weight:bold;
+    z-index:5;
+}
+.drop.hover{
+    border-color:#ffb900;
+    background:#fff6d6;
+    transform:scale(1.04);
+}
+.drop.filled{
+    border-style:solid;
+    border-color:#25c06d;
+    background:#e9fff3;
+}
+.drop small{
+    display:block;
+    color:#607080;
+    font-weight:normal;
+    margin-top:4px;
+}
+
+.slot-battery{left:95px;top:240px}
+.slot-k{left:350px;top:120px}
+.slot-k1{left:545px;top:205px}
+.slot-k2{left:725px;top:205px}
+.slot-d1{left:545px;top:365px}
+.slot-d2{left:725px;top:365px}
+
+.node-label{
+    position:absolute;
+    color:#0072bc;
+    font-weight:bold;
+    font-size:18px;
+    z-index:6;
+}
+.lb-k{left:405px;top:95px}
+.lb-k1{left:595px;top:180px}
+.lb-k2{left:775px;top:180px}
+.lb-d1{left:595px;top:475px}
+.lb-d2{left:775px;top:475px}
+
+.control-box{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+.ctrl{
+    padding:14px;
+    border-radius:16px;
+    border:none;
+    background:#d93025;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+    opacity:.45;
+}
+.ctrl.ready{opacity:1}
+.ctrl.on{background:#16a34a}
+
+.message{
+    margin-top:18px;
+    padding:18px;
+    border-radius:20px;
+    background:#f7fbff;
+    border:1px solid #d7e8ff;
+    text-align:center;
+}
+.message h3{color:#0072bc}
+.message p{color:#607080;margin-top:6px}
+.message.success{background:#eafff3;border-color:#91e8bc}
+.message.error{background:#fff0f0;border-color:#ffb3b3}
+
+/* Icon linh kiện */
+.battery{
+    width:44px;height:86px;margin:auto;border-radius:9px;
+    background:linear-gradient(#ffd04a 0 25%,#111 26% 100%);
+    position:relative;
+    box-shadow:0 6px 15px rgba(0,0,0,.2);
+}
+.battery:before{content:"+";position:absolute;top:7px;left:15px;font-weight:bold}
+.battery:after{content:"";position:absolute;top:-8px;left:15px;width:14px;height:8px;background:#ccc;border-radius:4px 4px 0 0}
+
+.switch{
+    width:88px;height:55px;margin:auto;border-radius:12px;
+    background:#303030;position:relative;
+    box-shadow:0 7px 14px rgba(0,0,0,.25);
+}
+.switch:after{
+    content:"";
+    position:absolute;
+    left:31px;top:7px;
+    width:25px;height:40px;
+    background:#ff5438;
+    border-radius:7px;
+    transform:rotate(-18deg);
+}
+.bulb{
+    width:66px;height:80px;margin:auto;border-radius:50% 50% 42% 42%;
+    background:radial-gradient(circle at 40% 30%,#fff,#fff0a0 40%,#ffc928 75%);
+    box-shadow:0 0 24px rgba(255,210,60,.65);
+    position:relative;
+}
+.bulb:after{
+    content:"";
+    position:absolute;left:22px;bottom:-20px;
+    width:23px;height:25px;
+    background:linear-gradient(#ccc,#777);
+    border-radius:6px;
+}
+.bulb.off{
+    background:radial-gradient(circle at 40% 30%,#fff,#cbd8e3 45%,#7a8c9b 80%);
+    box-shadow:none;
+}
+.placed strong{display:block;margin-top:7px;color:#0063a3}
+
+.btns{margin-top:14px;display:flex;gap:10px}
+.btn{
+    padding:12px 16px;
+    border-radius:14px;
+    border:1px solid #bcd8ff;
+    background:white;
+    color:#0066cc;
+    font-weight:bold;
+    cursor:pointer;
+}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+<div class="app">
+    <header class="header">
+        <div>
+            <h1>Mô phỏng mạch điện theo sơ đồ SGK</h1>
+            <p>Lắp nguồn điện, công tắc K, hai công tắc nhánh K1, K2 và hai bóng đèn Đ1, Đ2.</p>
+        </div>
+        <div class="score">
+            <span>Điểm thực hành</span>
+            <strong id="score">0</strong>
+        </div>
+    </header>
+
+    <main class="layout">
+        <aside class="panel">
+            <h2>Linh kiện</h2>
+            <p>Kéo linh kiện vào đúng vị trí trên sơ đồ. Sau khi lắp xong, thử bật K, K1, K2.</p>
+
+            <div class="part" draggable="true" data-part="battery">
+                <div class="battery"></div>
+                <strong>Nguồn điện</strong>
+                <small>Cung cấp điện năng</small>
+            </div>
+
+            <div class="part" draggable="true" data-part="k">
+                <div class="switch"></div>
+                <strong>Công tắc K</strong>
+                <small>Công tắc chính</small>
+            </div>
+
+            <div class="part" draggable="true" data-part="k1">
+                <div class="switch"></div>
+                <strong>Công tắc K1</strong>
+                <small>Điều khiển đèn Đ1</small>
+            </div>
+
+            <div class="part" draggable="true" data-part="k2">
+                <div class="switch"></div>
+                <strong>Công tắc K2</strong>
+                <small>Điều khiển đèn Đ2</small>
+            </div>
+
+            <div class="part" draggable="true" data-part="d1">
+                <div class="bulb"></div>
+                <strong>Bóng đèn Đ1</strong>
+                <small>Phụ tải 1</small>
+            </div>
+
+            <div class="part" draggable="true" data-part="d2">
+                <div class="bulb"></div>
+                <strong>Bóng đèn Đ2</strong>
+                <small>Phụ tải 2</small>
+            </div>
+
+            <div class="btns">
+                <button class="btn" onclick="resetSim()">Làm lại</button>
+            </div>
+        </aside>
+
+        <section class="board-wrap">
+            <div class="board" id="board">
+                <div class="board-title">
+                    <h2>Sơ đồ mạch điện đơn giản</h2>
+                    <p>K là công tắc chính. K1 điều khiển Đ1, K2 điều khiển Đ2.</p>
+                </div>
+
+                <svg class="svg-lines" viewBox="0 0 900 620">
+                    <path id="mainLine" class="line" d="M165 292 L165 155 L420 155 L420 235" />
+                    <path id="branch1" class="line" d="M420 235 L600 235 L600 365" />
+                    <path id="branch2" class="line" d="M420 235 L780 235 L780 365" />
+                    <path id="return1" class="line" d="M600 470 L600 535 L165 535 L165 345" />
+                    <path id="return2" class="line" d="M780 470 L780 535 L165 535" />
+                </svg>
+
+                <div class="drop slot-battery" data-accept="battery"><br><small></small></div>
+                <div class="drop slot-k" data-accept="k">K<br><small></small></div>
+                <div class="drop slot-k1" data-accept="k1">K1<br><small></small></div>
+                <div class="drop slot-k2" data-accept="k2">K2<br><small></small></div>
+                <div class="drop slot-d1" data-accept="d1">Đ1<br><small></small></div>
+                <div class="drop slot-d2" data-accept="d2">Đ2<br><small></small></div>
+            </div>
+
+            <div class="control-box">
+                <button class="ctrl" id="btnK" onclick="toggleSwitch('K')" disabled>K: OFF</button>
+                <button class="ctrl" id="btnK1" onclick="toggleSwitch('K1')" disabled>K1: OFF</button>
+                <button class="ctrl" id="btnK2" onclick="toggleSwitch('K2')" disabled>K2: OFF</button>
+            </div>
+
+            <div class="message" id="msg">
+                <h3>Nhiệm vụ thực hành</h3>
+                <p>Hãy lắp đủ 6 linh kiện vào đúng vị trí, sau đó thử bật công tắc để quan sát bóng đèn nào sáng.</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+let dragged = null;
+let placed = {};
+let done = false;
+let score = 0;
+
+let state = {
+    K:false,
+    K1:false,
+    K2:false
+};
+
+document.querySelectorAll(".part").forEach(part=>{
+    part.addEventListener("dragstart",()=>{
+        dragged = part.dataset.part;
+    });
+});
+
+document.querySelectorAll(".drop").forEach(drop=>{
+    drop.addEventListener("dragover",e=>{
+        e.preventDefault();
+        drop.classList.add("hover");
+    });
+
+    drop.addEventListener("dragleave",()=>{
+        drop.classList.remove("hover");
+    });
+
+    drop.addEventListener("drop",e=>{
+        e.preventDefault();
+        drop.classList.remove("hover");
+
+        const accept = drop.dataset.accept;
+
+        if(dragged === accept){
+            placed[dragged] = true;
+            drop.classList.add("filled");
+            drop.innerHTML = getHTML(dragged);
+            checkReady();
+        }else{
+            showMsg(
+                "Chưa đúng vị trí",
+                "Linh kiện này chưa phù hợp với vị trí đã chọn trên sơ đồ.",
+                "error"
+            );
+        }
+    });
+});
+
+function getHTML(part){
+    if(part==="battery") return `<div class="placed"><div class="battery"></div><strong>Nguồn điện</strong></div>`;
+    if(part==="k") return `<div class="placed"><div class="switch"></div><strong>K</strong></div>`;
+    if(part==="k1") return `<div class="placed"><div class="switch"></div><strong>K1</strong></div>`;
+    if(part==="k2") return `<div class="placed"><div class="switch"></div><strong>K2</strong></div>`;
+    if(part==="d1") return `<div class="placed"><div class="bulb off" id="lampD1"></div><strong>Đ1</strong></div>`;
+    if(part==="d2") return `<div class="placed"><div class="bulb off" id="lampD2"></div><strong>Đ2</strong></div>`;
+}
+
+function checkReady(){
+    const ready = placed.battery && placed.k && placed.k1 && placed.k2 && placed.d1 && placed.d2;
+
+    if(ready){
+        document.querySelectorAll(".ctrl").forEach(btn=>{
+            btn.disabled=false;
+            btn.classList.add("ready");
+        });
+
+        if(!done){
+            score += 20;
+            document.getElementById("score").innerText = score;
+            done = true;
+        }
+
+        showMsg(
+            "Đã lắp xong mạch điện",
+            "Bây giờ hãy bật K trước, sau đó thử bật K1 hoặc K2 để quan sát đèn Đ1, Đ2.",
+            "success"
+        );
+    }
+}
+
+function toggleSwitch(name){
+    state[name] = !state[name];
+
+    const btn = document.getElementById("btn"+name);
+    btn.innerText = name + ": " + (state[name] ? "ON" : "OFF");
+    btn.classList.toggle("on", state[name]);
+
+    updateCircuit();
+}
+
+function updateCircuit(){
+    const d1On = state.K && state.K1;
+    const d2On = state.K && state.K2;
+
+    const lamp1 = document.getElementById("lampD1");
+    const lamp2 = document.getElementById("lampD2");
+
+    if(lamp1) lamp1.classList.toggle("off", !d1On);
+    if(lamp2) lamp2.classList.toggle("off", !d2On);
+
+    document.getElementById("mainLine").classList.toggle("hot", state.K);
+    document.getElementById("branch1").classList.toggle("hot", d1On);
+    document.getElementById("return1").classList.toggle("hot", d1On);
+    document.getElementById("branch2").classList.toggle("hot", d2On);
+    document.getElementById("return2").classList.toggle("hot", d2On);
+
+    if(!state.K){
+        showMsg(
+            "Công tắc K đang mở",
+            "K là công tắc chính. Khi K mở, cả Đ1 và Đ2 đều không sáng.",
+            "error"
+        );
+    }else if(d1On && d2On){
+        showMsg(
+            "Cả hai bóng đèn đều sáng",
+            "K đóng, K1 đóng và K2 đóng nên dòng điện đi qua cả hai nhánh.",
+            "success"
+        );
+    }else if(d1On){
+        showMsg(
+            "Bóng đèn Đ1 sáng",
+            "K và K1 đóng nên nhánh chứa Đ1 có dòng điện. K2 mở nên Đ2 không sáng.",
+            "success"
+        );
+    }else if(d2On){
+        showMsg(
+            "Bóng đèn Đ2 sáng",
+            "K và K2 đóng nên nhánh chứa Đ2 có dòng điện. K1 mở nên Đ1 không sáng.",
+            "success"
+        );
+    }else{
+        showMsg(
+            "Mạch chính đã có điện nhưng các nhánh đang mở",
+            "K đã đóng, nhưng K1 và K2 chưa đóng nên chưa có bóng đèn nào sáng.",
+            "error"
+        );
+    }
+}
+
+function showMsg(title,text,type){
+    const msg = document.getElementById("msg");
+    msg.className = "message " + type;
+    msg.innerHTML = `<h3>${title}</h3><p>${text}</p>`;
+}
+
+function resetSim(){
+    dragged=null;
+    placed={};
+    done=false;
+    score=0;
+    state={K:false,K1:false,K2:false};
+
+    document.getElementById("score").innerText="0";
+
+    document.querySelectorAll(".ctrl").forEach(btn=>{
+        btn.disabled=true;
+        btn.classList.remove("ready","on");
+    });
+
+    document.getElementById("btnK").innerText="K: OFF";
+    document.getElementById("btnK1").innerText="K1: OFF";
+    document.getElementById("btnK2").innerText="K2: OFF";
+
+    document.querySelectorAll(".line").forEach(line=>line.classList.remove("hot"));
+
+    const labels = {
+        battery:"Nguồn điện<br><small>kéo vào đây</small>",
+        k:"K<br><small>công tắc chính</small>",
+        k1:"K1<br><small>nhánh Đ1</small>",
+        k2:"K2<br><small>nhánh Đ2</small>",
+        d1:"Đ1<br><small>bóng đèn 1</small>",
+        d2:"Đ2<br><small>bóng đèn 2</small>"
+    };
+
+    document.querySelectorAll(".drop").forEach(drop=>{
+        const accept = drop.dataset.accept;
+        drop.classList.remove("filled","hover");
+        drop.innerHTML = labels[accept];
+    });
+
+    showMsg(
+        "Nhiệm vụ thực hành",
+        "Hãy lắp đủ 6 linh kiện vào đúng vị trí, sau đó thử bật công tắc để quan sát bóng đèn nào sáng.",
+        ""
+    );
+}
+</script>
+</body>
+</html>
